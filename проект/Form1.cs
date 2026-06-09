@@ -330,26 +330,30 @@ namespace BytovkaBuilder
         }
 
         private void BtnShow_Click(object sender, EventArgs e)
-        {
-            string imageName = GetImageFileName();
-            string imagesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
-            string imagePath = Path.Combine(imagesPath, imageName);
-
-            if (File.Exists(imagePath))
-            {
-                pictureBox.Image = Image.FromFile(imagePath);
-            }
-            else
-            {
-                MessageBox.Show($"Файл не найден!\n\n" +
-                    $"Ищем: {imagePath}\n\n" +
-                    $"1. Скачайте фото бытовки для варианта «{GetSelectedExteriorMaterialName()}»\n" +
-                    $"2. Переименуйте файл в: {imageName}\n" +
-                    $"3. Положите в папку: {imagesPath}\n\n" +
-                    $"Поддерживаемые форматы: .jpg, .jpeg, .png",
-                    "Изображение не найдено", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
+{
+    string imageName = GetImageFileName();
+    
+    // Получаем путь к папке, где находится сам EXE файл
+    string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+    
+    // Формируем путь к папке Images (на том же уровне, что и EXE)
+    string imagesPath = Path.Combine(exeDirectory, "Images");
+    string imagePath = Path.Combine(imagesPath, imageName);
+    
+    if (File.Exists(imagePath))
+    {
+        pictureBox.Image = Image.FromFile(imagePath);
+    }
+    else
+    {
+        MessageBox.Show($"Файл не найден!\n\n" +
+            $"Ищем: {imagePath}\n\n" +
+            $"1. Создайте папку 'Images' рядом с программой\n" +
+            $"2. Положите туда файл: {imageName}\n\n" +
+            $"Текущая папка программы: {exeDirectory}", 
+            "Изображение не найдено", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+}
 
         private void BtnExportExcel_Click(object sender, EventArgs e)
         {
