@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -23,6 +23,11 @@ namespace BytovkaBuilder
         private CheckBox chkWindow;
         private NumericUpDown numWidth, numHeight;
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
         // Поле для пожеланий
         private TextBox txtWishes;
 
@@ -38,12 +43,21 @@ namespace BytovkaBuilder
 
         private void InitializeComponent()
         {
-            this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new Size(1100, 750);
+            this.SuspendLayout();
+            // 
+            // Form1
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(242)))), ((int)(((byte)(245)))));
+            this.ClientSize = new System.Drawing.Size(1100, 750);
+            this.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.Name = "Form1";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Конструктор бытовки";
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(240, 242, 245);
-            this.Font = new Font("Segoe UI", 9F);
+            this.Load += new System.EventHandler(this.Form1_Load);
+            this.ResumeLayout(false);
+
         }
 
         private void SetupForm()
@@ -329,31 +343,88 @@ namespace BytovkaBuilder
             return "Не выбрано";
         }
 
+        // Улучшенный метод поиска изображений в нескольких местах
+        private string FindImagePath(string imageName)
+        {
+            // Получаем базовую директорию (где находится EXE файл)
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+            // Список путей для поиска
+            string[] searchPaths = new string[]
+            {
+                // 1. Папка Images рядом с EXE (BytovkaBuilder2-master\проект\bin\Debug\Images)
+                Path.Combine(baseDirectory, "Images", imageName),
+                
+                // 2. Папка Images на уровень выше (BytovkaBuilder2-master\проект\bin\Images)
+                Path.Combine(Directory.GetParent(baseDirectory).FullName, "Images", imageName),
+                
+                // 3. Папка Images в корне проекта (BytovkaBuilder2-master\проект\Images)
+                Path.Combine(Directory.GetParent(Directory.GetParent(baseDirectory).FullName).FullName, "Images", imageName),
+                
+                // 4. Папка Images на 3 уровня выше (BytovkaBuilder2-master\Images)
+                Path.Combine(Directory.GetParent(Directory.GetParent(Directory.GetParent(baseDirectory).FullName).FullName).FullName, "Images", imageName),
+                
+                // 5. Просто в папке с EXE
+                Path.Combine(baseDirectory, imageName),
+                
+                // 6. В папке Resources (если есть)
+                Path.Combine(baseDirectory, "Resources", imageName)
+            };
+
+            // Проверяем каждый путь
+            foreach (string path in searchPaths)
+            {
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            // Если файл не найден, возвращаем первый путь для отображения ошибки
+            return searchPaths[0];
+        }
+
         private void BtnShow_Click(object sender, EventArgs e)
-{
-    string imageName = GetImageFileName();
-    
-    // Получаем путь к папке, где находится сам EXE файл
-    string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
-    
-    // Формируем путь к папке Images (на том же уровне, что и EXE)
-    string imagesPath = Path.Combine(exeDirectory, "Images");
-    string imagePath = Path.Combine(imagesPath, imageName);
-    
-    if (File.Exists(imagePath))
-    {
-        pictureBox.Image = Image.FromFile(imagePath);
-    }
-    else
-    {
-        MessageBox.Show($"Файл не найден!\n\n" +
-            $"Ищем: {imagePath}\n\n" +
-            $"1. Создайте папку 'Images' рядом с программой\n" +
-            $"2. Положите туда файл: {imageName}\n\n" +
-            $"Текущая папка программы: {exeDirectory}", 
-            "Изображение не найдено", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-    }
-}
+        {
+            string imageName = GetImageFileName();
+
+            // Ищем изображение в нескольких местах
+            string imagePath = FindImagePath(imageName);
+
+            if (File.Exists(imagePath))
+            {
+                try
+                {
+                    pictureBox.Image = Image.FromFile(imagePath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при загрузке изображения:\n{ex.Message}",
+                        "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                // Формируем информативное сообщение об ошибке
+                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string message = $"Файл не найден!\n\n" +
+                    $"Ищем файл: {imageName}\n\n" +
+                    $"Проверьте следующие папки:\n" +
+                    $"1. {Path.Combine(baseDirectory, "Images")}\n" +
+                    $"2. {Path.Combine(Directory.GetParent(baseDirectory).FullName, "Images")}\n" +
+                    $"3. {Path.Combine(Directory.GetParent(Directory.GetParent(baseDirectory).FullName).FullName, "Images")}\n\n" +
+                    $"Текущая папка программы: {baseDirectory}\n\n" +
+                    $"Рекомендация:\n" +
+                    $"1. Создайте папку 'Images' в папке с программой\n" +
+                    $"2. Положите туда файл: {imageName}\n" +
+                    $"3. Или поместите изображения в папку 'Images' в корне проекта";
+
+                MessageBox.Show(message,
+                    "Изображение не найдено",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        }
 
         private void BtnExportExcel_Click(object sender, EventArgs e)
         {
@@ -361,81 +432,89 @@ namespace BytovkaBuilder
             string fileName = $"ТехЗадание_Бытовка_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
             string filePath = Path.Combine(desktopPath, fileName);
 
-            using (var workbook = new XLWorkbook())
+            try
             {
-                var ws = workbook.Worksheets.Add("Спецификация");
-
-                ws.Cell(1, 1).Value = "Категория";
-                ws.Cell(1, 2).Value = "Выбранный материал";
-                ws.Cell(1, 3).Value = "Примечание";
-
-                var headerRange = ws.Range(1, 1, 1, 3);
-                headerRange.Style.Font.Bold = true;
-                headerRange.Style.Fill.BackgroundColor = XLColor.FromArgb(52, 73, 94);
-                headerRange.Style.Font.FontColor = XLColor.White;
-
-                int row = 2;
-
-                ws.Cell(row, 1).Value = "Внешняя обшивка";
-                ws.Cell(row, 2).Value = GetSelectedExteriorMaterialName();
-                row++;
-
-                ws.Cell(row, 1).Value = "Внутренняя отделка стен";
-                ws.Cell(row, 2).Value = GetSelectedInterior();
-                row++;
-
-                ws.Cell(row, 1).Value = "Пол";
-                ws.Cell(row, 2).Value = GetSelectedFloor();
-                row++;
-
-                ws.Cell(row, 1).Value = "Дверь";
-                ws.Cell(row, 2).Value = chkDoor.Checked ? "Стандартная ГОСТ дверь" : "Не требуется";
-                row++;
-
-                if (chkWindow.Checked)
+                using (var workbook = new XLWorkbook())
                 {
-                    ws.Cell(row, 1).Value = "Окно";
-                    ws.Cell(row, 2).Value = $"Размер: {numWidth.Value} x {numHeight.Value} см";
+                    var ws = workbook.Worksheets.Add("Спецификация");
+
+                    ws.Cell(1, 1).Value = "Категория";
+                    ws.Cell(1, 2).Value = "Выбранный материал";
+                    ws.Cell(1, 3).Value = "Примечание";
+
+                    var headerRange = ws.Range(1, 1, 1, 3);
+                    headerRange.Style.Font.Bold = true;
+                    headerRange.Style.Fill.BackgroundColor = XLColor.FromArgb(52, 73, 94);
+                    headerRange.Style.Font.FontColor = XLColor.White;
+
+                    int row = 2;
+
+                    ws.Cell(row, 1).Value = "Внешняя обшивка";
+                    ws.Cell(row, 2).Value = GetSelectedExteriorMaterialName();
                     row++;
+
+                    ws.Cell(row, 1).Value = "Внутренняя отделка стен";
+                    ws.Cell(row, 2).Value = GetSelectedInterior();
+                    row++;
+
+                    ws.Cell(row, 1).Value = "Пол";
+                    ws.Cell(row, 2).Value = GetSelectedFloor();
+                    row++;
+
+                    ws.Cell(row, 1).Value = "Дверь";
+                    ws.Cell(row, 2).Value = chkDoor.Checked ? "Стандартная ГОСТ дверь" : "Не требуется";
+                    row++;
+
+                    if (chkWindow.Checked)
+                    {
+                        ws.Cell(row, 1).Value = "Окно";
+                        ws.Cell(row, 2).Value = $"Размер: {numWidth.Value} x {numHeight.Value} см";
+                        row++;
+                    }
+                    else
+                    {
+                        ws.Cell(row, 1).Value = "Окно";
+                        ws.Cell(row, 2).Value = "Не требуется";
+                        row++;
+                    }
+
+                    string wishText = txtWishes.Text;
+                    if (wishText == "Напишите здесь ваши пожелания...")
+                        wishText = "";
+
+                    if (!string.IsNullOrWhiteSpace(wishText))
+                    {
+                        row++;
+                        ws.Cell(row, 1).Value = "Дополнительные пожелания";
+                        ws.Cell(row, 2).Value = wishText;
+                        ws.Cell(row, 2).Style.Alignment.WrapText = true;
+                        ws.Row(row).Height = 50;
+                    }
+
+                    row += 2;
+                    ws.Cell(row, 1).Value = "Дата формирования";
+                    ws.Cell(row, 2).Value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
+
+                    ws.Columns().AdjustToContents();
+                    ws.Column(2).Width = Math.Max(ws.Column(2).Width, 50);
+
+                    workbook.SaveAs(filePath);
                 }
-                else
+
+                MessageBox.Show($"✓ Техзадание сохранено на рабочем столе!\n\n📁 {filePath}",
+                    "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                DialogResult result = MessageBox.Show("Открыть файл?", "Открыть Excel",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (result == DialogResult.Yes)
                 {
-                    ws.Cell(row, 1).Value = "Окно";
-                    ws.Cell(row, 2).Value = "Не требуется";
-                    row++;
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(filePath) { UseShellExecute = true });
                 }
-
-                string wishText = txtWishes.Text;
-                if (wishText == "Напишите здесь ваши пожелания...")
-                    wishText = "";
-
-                if (!string.IsNullOrWhiteSpace(wishText))
-                {
-                    row++;
-                    ws.Cell(row, 1).Value = "Дополнительные пожелания";
-                    ws.Cell(row, 2).Value = wishText;
-                    ws.Cell(row, 2).Style.Alignment.WrapText = true;
-                    ws.Row(row).Height = 50;
-                }
-
-                row += 2;
-                ws.Cell(row, 1).Value = "Дата формирования";
-                ws.Cell(row, 2).Value = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
-
-                ws.Columns().AdjustToContents();
-                ws.Column(2).Width = Math.Max(ws.Column(2).Width, 50);
-
-                workbook.SaveAs(filePath);
             }
-
-            MessageBox.Show($"✓ Техзадание сохранено на рабочем столе!\n\n📁 {filePath}",
-                "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            DialogResult result = MessageBox.Show("Открыть файл?", "Открыть Excel",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.Yes)
+            catch (Exception ex)
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(filePath) { UseShellExecute = true });
+                MessageBox.Show($"Ошибка при сохранении файла:\n{ex.Message}",
+                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
